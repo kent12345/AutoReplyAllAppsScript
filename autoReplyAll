@@ -1,0 +1,48 @@
+function autoReplyAll() {
+  var alias1 = 'foo+urgent@example.com'; // Replace with your first alias
+  var response1 = 'Hello, \n\nThank you for your urgent message. We will take a look and provide an update as soon as we can. \n\nThanks!\nKent'; // Replace with your response message for alias1
+
+  var alias2 = 'foo+noturgent@example.com'; // Replace with your second alias
+  var response2 = 'Hello, \n\nThank you for your email. We will take a look and provide an update as soon as we can. \n\nThanks!\nKent'; // Replace with your response message for alias2
+
+  // Get the threads in the inbox
+  var threads = GmailApp.getInboxThreads();
+
+  for (var i = 0; i < threads.length; i++) {
+    var thread = GmailApp.getThreadById(threads[i].getId()); // Re-fetch the thread
+    var messages = thread.getMessages();
+    
+    // Check if any message in the thread is already starred
+    // This is in case the original sender has an auto responder. Don't want to get into an infinite loop.
+    var isThreadProcessed = messages.some(message => message.isStarred());
+
+    if (!isThreadProcessed) {
+      for (var j = 0; j < messages.length; j++) {
+        var message = messages[j];
+        var toField = message.getTo();
+
+        // Check if the message is to either of the aliases and is unread
+        if (message.isUnread()) {
+          if (toField.indexOf(alias1) !== -1) {
+            // Send the reply-all for alias1
+            message.replyAll(response1, {
+              cc: message.getCc(),
+              bcc: message.getBcc()
+            });
+          } else if (toField.indexOf(alias2) !== -1) {
+            // Send the reply-all for alias2
+            message.replyAll(response2, {
+              cc: message.getCc(),
+              bcc: message.getBcc()
+            });
+          }
+
+          // Mark the message as read and star it
+          message.markRead();
+          message.star();
+          break; // Break the loop after responding to prevent multiple responses in the same thread
+        }
+      }
+    }
+  }
+}
